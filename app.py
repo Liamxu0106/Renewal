@@ -20,7 +20,7 @@ class Item(BaseModel):
     query: str
 
 # 从环境变量获取OpenAI API密钥
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "your-openai-api-key-here")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 @app.get("/")
 def read_root():
@@ -29,6 +29,9 @@ def read_root():
 @app.post('/chat', response_class=JSONResponse)
 def handle_query(item: Item):
     try:
+        if not OPENAI_API_KEY:
+            return JSONResponse(content={"error": "OpenAI API key not configured"}, status_code=500)
+        
         # 设置OpenAI API密钥
         openai.api_key = OPENAI_API_KEY
         
@@ -42,9 +45,9 @@ def handle_query(item: Item):
             temperature=0.7
         )
         answer = response.choices[0].message.content
-        return JSONResponse(content={"response": answer}, headers={"Content-Type": "application/json; charset=utf-8"})
+        return JSONResponse(content={"response": answer})
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, headers={"Content-Type": "application/json; charset=utf-8"})
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 if __name__ == '__main__':
     import uvicorn
@@ -81,11 +84,11 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 def read_root():
     return {"message": "Climate Chat API is running!"}
 
-@app.post('/chat', response_class=JSONResponse)
+@app.post('/chat')
 def handle_query(item: Item):
     try:
         if not OPENAI_API_KEY:
-            return JSONResponse(content={"error": "OpenAI API key not configured"}, status_code=500)
+            return {"error": "OpenAI API key not configured"}
         
         # 设置OpenAI API密钥
         openai.api_key = OPENAI_API_KEY
@@ -100,9 +103,9 @@ def handle_query(item: Item):
             temperature=0.7
         )
         answer = response.choices[0].message.content
-        return JSONResponse(content={"response": answer})
+        return {"response": answer}
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+        return {"error": str(e)}
 
 if __name__ == '__main__':
     import uvicorn
