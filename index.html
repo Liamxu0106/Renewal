@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Climate Change Chat Assistant</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      background: #f7f7f7; 
+    }
+    #container { 
+      max-width: 420px; 
+      margin: 0 auto; 
+      min-height: 100vh; 
+      background: #fff; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+      display: flex; 
+      flex-direction: column; 
+    }
+    #chatbox { 
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 16px; 
+    }
+    .message { 
+      margin: 8px 0; 
+      padding: 8px 12px; 
+      border-radius: 8px; 
+      max-width: 85%; 
+      word-break: keep-all; 
+      overflow-wrap: break-word; 
+    }
+    .user-msg { 
+      background: #d1f5d3; 
+      align-self: flex-end; 
+      text-align: right; 
+      margin-left: auto;
+    }
+    .bot-msg { 
+      background: #f0f0f0; 
+      align-self: flex-start; 
+      text-align: left; 
+    }
+    #input-area { 
+      display: flex; 
+      padding: 12px; 
+      border-top: 1px solid #eee; 
+      background: #fafafa; 
+    }
+    #input { 
+      flex: 1; 
+      padding: 8px; 
+      border: 1px solid #ccc; 
+      border-radius: 4px; 
+      font-size: 1em; 
+    }
+    #sendBtn { 
+      margin-left: 8px; 
+      padding: 8px 16px; 
+      border: none; 
+      background: #4caf50; 
+      color: #fff; 
+      border-radius: 4px; 
+      font-size: 1em; 
+      cursor: pointer; 
+      transition: background 0.2s; 
+    }
+    #sendBtn:disabled { 
+      background: #a5d6a7; 
+      cursor: not-allowed; 
+    }
+    #sendBtn:hover {
+      background: #45a049;
+    }
+    #status { 
+      font-size: 0.95em; 
+      color: #888; 
+      margin: 8px 0 0 0; 
+      text-align: center; 
+      min-height: 1.2em; 
+    }
+    .framework-indicator { 
+      background: #e3f2fd; 
+      padding: 8px; 
+      margin: 8px 0; 
+      border-radius: 4px; 
+      font-size: 0.9em; 
+      color: #1976d2; 
+      text-align: center; 
+    }
+    @media (max-width: 480px) {
+      #container { 
+        max-width: 100vw; 
+        min-height: 100vh; 
+        box-shadow: none; 
+      }
+      #chatbox { 
+        padding: 8px; 
+      }
+      #input-area { 
+        padding: 8px; 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="chatbox">
+      <div class="message bot-msg">📚 What do you think of the reading material? Do you want to ask me any question?</div>
+    </div>
+    <div id="input-area">
+      <input type="text" id="input" placeholder="请输入您的问题..." autocomplete="off" />
+      <button id="sendBtn">发送</button>
+    </div>
+    <div id="status"></div>
+  </div>
+  <script>
+    // 使用您的工作API地址
+    const API_URL = "https://climate-chat-api.onrender.com/chat";
+    const inputElem = document.getElementById('input');
+    const chatbox = document.getElementById('chatbox');
+    const statusElem = document.getElementById('status');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // 用户选择的框架
+    let userFramework = null;
+    let isFirstMessage = true;
+
+    // 框架识别关键词
+    const frameworkKeywords = {
+      'economic': ['economic', 'economy', 'financial', 'cost', 'money', 'business', 'market', 'investment', 'gdp', 'revenue', 'profit', 'loss', 'economic impact', 'economic effects'],
+      'public_health': ['health', 'medical', 'disease', 'illness', 'wellness', 'public health', 'healthcare', 'hospital', 'doctor', 'patient', 'symptoms', 'treatment', 'prevention'],
+      'moral': ['moral', 'ethical', 'right', 'wrong', 'justice', 'fairness', 'values', 'principles', 'conscience', 'virtue', 'duty', 'responsibility', 'moral obligation'],
+      'inequality': ['inequality', 'inequity', 'disparity', 'gap', 'difference', 'unfair', 'unequal', 'disadvantage', 'privilege', 'discrimination', 'social justice', 'equity']
+    };
+
+    // 预设回复内容
+    const frameworkResponses = {
+      'economic': `Economic Frame
+Climate change, driven by greenhouse gas emissions from human activities that trap heat and intensify the natural greenhouse effect, poses growing financial risks to societies worldwide. The Intergovernmental Panel on Climate Change (IPCC) reports that limiting warming to 1.5°C requires global CO₂ emissions to reach net-zero by the early 2050s. Once net-zero is achieved, warming will stabilize but not reverse, as further cooling would require sustained negative emissions (IPCC, 2023).
+
+Economically, the costs of inaction are steep. Climate-related disasters already cause $250–300 billion in global economic losses annually (WMO, 2023), and by mid-century, annual climate damages could exceed 1% of global GDP (IPCC, 2022). Poorer countries bear disproportionately higher losses—up to 2–3 times more as a share of GDP compared to wealthier nations (IPCC, 2023).
+
+In contrast, climate action—especially investment in clean energy and resilience—offers growing economic benefits. According to the International Energy Agency (IEA), solar and wind energy are now cheaper than coal or gas in over two-thirds of the world (IEA, 2023). In countries like India and China, utility-scale solar costs around $25–40 per megawatt-hour (MWh), significantly below the $60–80 per MWh typical for coal (IRENA, 2023). Globally, solar power costs have fallen by 85% since 2010, and wind power by 55% (IRENA, 2023).
+
+Renewables are now the cheapest form of new electricity in most regions, making clean energy the economically rational choice. In 2022, global investment in renewable energy reached $495 billion, exceeding investments in fossil fuel supply for the first time (BloombergNEF, 2023). The renewable energy sector now employs over 13 million people globally (IRENA, 2023).
+
+Moreover, investing in climate resilience—such as flood defenses, drought-resistant infrastructure, and early warning systems—is expanding, though still insufficient. Global adaptation and resilience investment reached about $63 billion per year, far below the estimated need of $300 billion annually by 2030 (UNEP, 2023).
+
+Incorporating health benefits, air pollution reductions, and infrastructure gains, most studies find that the economic benefits of climate mitigation outweigh the costs (IPCC, 2022). Delaying action leads to higher disaster recovery costs, disrupted supply chains, and deepening social inequalities.
+
+*What can individuals do?*
+• Reduce energy consumption through efficiency upgrades and mindful usage.
+• Support green policies that promote clean energy, carbon pricing, and climate resilience infrastructure.
+• Choose sustainable products and diets, encouraging businesses to adopt low-carbon models.
+
+In summary, climate action is not just environmentally necessary—it's an economic opportunity for sustainable, resilient growth.`,
+      
+      'public_health': `Climate change, driven by greenhouse gas emissions from human activities that trap heat and intensify the natural greenhouse effect, poses growing risks to societies worldwide. The Intergovernmental Panel on Climate Change (IPCC) reports that limiting warming to 1.5°C requires global CO₂ emissions to reach net-zero by the early 2050s. Once net-zero is achieved, warming will stabilize but not reverse, as further cooling would require sustained negative emissions (IPCC, 2023).
+
+Climate change isn't just an environmental or economic issue—it's also a major public health threat. Rising temperatures and shifting weather patterns increase the frequency and severity of health hazards. Heatwaves, now more frequent and intense, cause tens of thousands of deaths annually, with vulnerable groups like children and the elderly most at risk (WHO, 2023). According to WHO estimates, climate change could contribute to an additional 250,000 deaths per year between 2030 and 2050, from heat stress, undernutrition, and vector-borne diseases such as malaria and dengue (WHO, 2021). Warming also worsens air quality: elevated temperatures exacerbate ground-level ozone and particulate matter pollution, increasing rates of asthma, heart disease, and stroke. These impacts disproportionately affect low-income populations, exacerbating existing health inequalities.
+
+Beyond physical health, climate change harms mental health. Climate-induced disasters and displacement trigger trauma, anxiety, and depression. The IPCC reports negative mental health impacts from climate-related shocks worldwide, noting that repeated exposure to disasters can have cumulative psychological effects (IPCC, 2022).
+
+However, many climate actions deliver immediate health co-benefits. Shifting to clean energy not only cuts CO₂ emissions but also reduces air pollution from burning fossil fuels—a leading contributor to respiratory and cardiovascular diseases. Additionally, rethinking urban design supports both climate goals and public health. Encouraging walking, cycling, and public transport reduces emissions while increasing physical activity—helping prevent obesity, diabetes, and heart disease. Sustainable diets, with greater consumption of plant-based foods, similarly offer health and environmental benefits. Greening cities with parks and trees mitigates urban heat islands and supports mental well-being.
+
+*What can individuals do?*
+• Reduce energy use and pollution through adopting clean electricity, energy-efficient appliances, and reducing fossil fuel consumption.
+• Embrace active and public transport to reduce emissions while supporting physical health.
+• Adopt sustainable diets, consuming more plant-based foods and minimizing food waste.
+• Support climate-health policies, such as air quality regulations, urban greening programs, and climate-adapted healthcare systems.
+
+By taking these actions, individuals can safeguard both public health and the planet, realizing climate action as a public health opportunity.`,
+      
+      'moral': `Excellent! The moral/ethical framing of climate change addresses questions of justice, responsibility, and our obligations to future generations and vulnerable populations.
+
+*Key moral considerations include:*
+• Intergenerational justice and future generations
+• Responsibility of developed vs. developing nations
+• Rights of indigenous communities and vulnerable groups
+• Ethical consumption and lifestyle choices
+• Moral duty to protect the environment
+
+What ethical dimension interests you most?`,
+      
+      'inequality': `Perfect! The inequality framing examines how climate change disproportionately affects different groups and communities, often exacerbating existing social and economic disparities.
+
+*Key inequality issues include:*
+• Climate justice and environmental racism
+• Disproportionate impacts on low-income communities
+• Gender differences in climate vulnerability
+• Global North vs. Global South disparities
+• Access to adaptation resources and technology
+
+Which inequality aspect would you like to explore?`
+    };
+
+    // 识别用户选择的框架
+    function detectFramework(userInput) {
+      const lowerInput = userInput.toLowerCase();
+      
+      for (const [framework, keywords] of Object.entries(frameworkKeywords)) {
+        for (const keyword of keywords) {
+          if (lowerInput.includes(keyword)) {
+            return framework;
+          }
+        }
+      }
+      
+      // 如果没有明确匹配，返回默认框架
+      return 'economic';
+    }
+
+    // 显示框架指示器
+    function showFrameworkIndicator(framework) {
+      const frameworkNames = {
+        'economic': 'Economic Perspective',
+        'public_health': 'Public Health Perspective', 
+        'moral': 'Moral/Ethical Perspective',
+        'inequality': 'Inequality Perspective'
+      };
+      
+      const indicator = document.createElement('div');
+      indicator.className = 'framework-indicator';
+      indicator.textContent = `🎯 You've selected: ${frameworkNames[framework]}`;
+      chatbox.appendChild(indicator);
+    }
+
+    // 格式化消息文本（将*转换为加粗，支持换行）
+    function formatMessage(text) {
+      // 将*text*转换为<b>text</b>
+      text = text.replace(/\*(.*?)\*/g, '<b>$1</b>');
+      // 将换行符转换为<br>
+      text = text.replace(/\n/g, '<br>');
+      return text;
+    }
+
+    // 自动滚动到底部
+    function scrollToBottom() {
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    // 发送消息
+    async function sendMessage() {
+      const userText = inputElem.value.trim();
+      if (!userText) return;
+      
+      // 显示用户消息
+      const userMsgDiv = document.createElement('div');
+      userMsgDiv.className = 'message user-msg';
+      userMsgDiv.textContent = userText;
+      chatbox.appendChild(userMsgDiv);
+      scrollToBottom();
+      
+      inputElem.value = '';
+      inputElem.focus();
+      statusElem.textContent = 'AI 正在思考...';
+      sendBtn.disabled = true;
+
+      try {
+        // 如果是第一条消息，识别框架并给出预设回复
+        if (isFirstMessage) {
+          userFramework = detectFramework(userText);
+          isFirstMessage = false;
+          
+          // 显示框架指示器
+          showFrameworkIndicator(userFramework);
+          
+          // 给出预设回复
+          const botMsgDiv = document.createElement('div');
+          botMsgDiv.className = 'message bot-msg';
+          botMsgDiv.innerHTML = formatMessage(frameworkResponses[userFramework]);
+          chatbox.appendChild(botMsgDiv);
+          scrollToBottom();
+          
+        } else {
+          // 后续消息，调用 AI API，并带上框架上下文
+          const enhancedQuery = `[User has selected the ${userFramework} perspective on climate change] ${userText}`;
+          
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: enhancedQuery })
+          });
+          
+          if (!response.ok) {
+            throw new Error("网络错误，状态码：" + response.status);
+          }
+          
+          const data = await response.json();
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          
+          const botMsgDiv = document.createElement('div');
+          botMsgDiv.className = 'message bot-msg';
+          botMsgDiv.innerHTML = formatMessage(data.response);
+          chatbox.appendChild(botMsgDiv);
+          scrollToBottom();
+        }
+        
+      } catch (err) {
+        statusElem.textContent = '❌ ' + err.message;
+      } finally {
+        statusElem.textContent = '';
+        sendBtn.disabled = false;
+      }
+    }
+
+    // 发送按钮点击
+    sendBtn.addEventListener('click', sendMessage);
+    // 回车发送
+    inputElem.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>
