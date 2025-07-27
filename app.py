@@ -26,11 +26,11 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 def read_root():
     return {"message": "Climate Chat API is running!"}
 
-@app.post('/chat', response_class=JSONResponse)
+@app.post('/chat')
 def handle_query(item: Item):
     try:
         if not OPENAI_API_KEY:
-            return JSONResponse(content={"error": "OpenAI API key not configured"}, status_code=500)
+            return {"error": "OpenAI API key not configured"}
         
         # 设置OpenAI API密钥
         openai.api_key = OPENAI_API_KEY
@@ -45,9 +45,9 @@ def handle_query(item: Item):
             temperature=0.7
         )
         answer = response.choices[0].message.content
-        return JSONResponse(content={"response": answer})
+        return {"response": answer}
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+        return {"error": str(e)}
 
 if __name__ == '__main__':
     import uvicorn
@@ -60,12 +60,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
-from fastapi.responses import JSONResponse
 import os
 
 app = FastAPI()
 
-# 添加CORS中间件
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -77,7 +75,6 @@ app.add_middleware(
 class Item(BaseModel):
     query: str
 
-# 从环境变量获取OpenAI API密钥
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 @app.get("/")
@@ -90,10 +87,8 @@ def handle_query(item: Item):
         if not OPENAI_API_KEY:
             return {"error": "OpenAI API key not configured"}
         
-        # 设置OpenAI API密钥
         openai.api_key = OPENAI_API_KEY
         
-        # 调用OpenAI的ChatGPT API
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
